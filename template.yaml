@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+    AirTraffic control subsystem
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+    Function:
+        Timeout: 20
+
+Resources:
+  AircraftTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: aircraftId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: aircraftId
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+  GetAircraftFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: target/varma-airtraffic-control-1.0.0.jar
+      Handler: com.varma.airtraffic.control.handler.GetAircraftHandler::handleRequest
+      Policies: AmazonDynamoDBFullAccess
+      Runtime: java8
+      MemorySize: 1024
+      Timeout: 120
+      Environment:
+        Variables:
+          AIRCRAFT_TABLE_NAME: !Ref AircraftTable
+      Events:
+        GetAircraft:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /aircrafts/{aircraftId}
+            Method: get
+
+  CreateAircraftFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: target/varma-airtraffic-control-1.0.0.jar
+      Handler: com.varma.airtraffic.control.handler.CreateAircraftHandler::handleRequest
+      Runtime: java8
+      Policies: AmazonDynamoDBFullAccess
+      MemorySize: 1024
+      Timeout: 120
+      Environment:
+        Variables:
+          AIRCRAFT_TABLE_NAME: !Ref AircraftTable
+      Events:
+        CreateAircraft:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /aircrafts
+            Method: post
+
+Outputs:
+    GetAircraftFunction:
+      Description: "GetAircraft Lambda Function ARN"
+      Value: !GetAtt GetAircraftFunction.Arn
+
+    CreateAircraftFunction:
+      Description: "CreateAircraft Lambda Function ARN"
+      Value: !GetAtt CreateAircraftFunction.Arn
+

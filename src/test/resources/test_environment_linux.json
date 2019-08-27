@@ -1,0 +1,10 @@
+{
+  "GetAircraftFunction": {
+    "ENDPOINT_OVERRIDE": "http://127.0.0.1:8000",
+    "TABLE_NAME": "AircraftTable"
+  },
+  "CreateAircraftFunction": {
+    "ENDPOINT_OVERRIDE": "http://127.0.0.1:8000",
+    "TABLE_NAME": "AircraftTable"
+  }
+}
