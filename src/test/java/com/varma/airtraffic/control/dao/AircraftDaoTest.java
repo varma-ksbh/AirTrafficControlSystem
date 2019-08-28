@@ -1,6 +1,5 @@
 package com.varma.airtraffic.control.dao;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.varma.airtraffic.control.exception.CouldNotCreateAircraftException;
 import com.varma.airtraffic.control.exception.TableDoesNotExistException;
 import com.varma.airtraffic.control.model.Aircraft;
@@ -31,9 +30,7 @@ import static org.mockito.Mockito.mock;
 public class AircraftDaoTest {
     private static final String AIRCRAFT_ID = "some ac id";
     private DynamoDbClient dynamoDb = mock(DynamoDbClient.class);
-    private PriorityAircraftsDao priorityAircraftsDao = mock(PriorityAircraftsDao.class);
-    private ObjectMapper mapper = new ObjectMapper();
-    private AircraftDao aircraftDao = new AircraftDao(dynamoDb, "table_name", priorityAircraftsDao);
+    private AircraftDao aircraftDao = new AircraftDao(dynamoDb, "table_name");
 
     private CreateAircraftRequest createAircraftRequest = CreateAircraftRequest.builder()
             .aircraftSize(AircraftSize.LARGE)

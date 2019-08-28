@@ -3,6 +3,7 @@ package com.varma.airtraffic.control.config;
 import com.varma.airtraffic.control.dao.AircraftDao;
 import com.varma.airtraffic.control.dao.PriorityAircraftsDao;
 import com.varma.airtraffic.control.handler.CreateAircraftHandler;
+import com.varma.airtraffic.control.handler.DequeueAircraftHandler;
 import com.varma.airtraffic.control.handler.GetAircraftHandler;
 import dagger.Component;
 
@@ -20,4 +21,6 @@ public interface AirTrafficControlComponent {
     void inject(GetAircraftHandler requestHandler);
 
     void inject(CreateAircraftHandler requestHandler);
+
+    void inject(DequeueAircraftHandler dequeueAircraftHandler);
 }

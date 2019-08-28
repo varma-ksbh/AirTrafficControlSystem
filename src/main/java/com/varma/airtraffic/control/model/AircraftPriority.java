@@ -11,7 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PriorityAircraft {
+public class AircraftPriority {
     private String priorityId;
     private String aircraftId;
     private String arrivalTime;

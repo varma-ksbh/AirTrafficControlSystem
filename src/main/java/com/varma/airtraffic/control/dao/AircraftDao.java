@@ -1,6 +1,5 @@
 package com.varma.airtraffic.control.dao;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.varma.airtraffic.control.exception.AircraftDoesNotExistException;
 import com.varma.airtraffic.control.exception.CouldNotCreateAircraftException;
 import com.varma.airtraffic.control.exception.TableDoesNotExistException;
@@ -8,16 +7,20 @@ import com.varma.airtraffic.control.model.Aircraft;
 import com.varma.airtraffic.control.model.AircraftSize;
 import com.varma.airtraffic.control.model.AircraftSpecialFlag;
 import com.varma.airtraffic.control.model.AircraftType;
-import com.varma.airtraffic.control.model.request.CreateAircraftPriorityRequest;
 import com.varma.airtraffic.control.model.request.CreateAircraftRequest;
-import com.varma.airtraffic.control.model.request.UpdateAirportPriorityQueueRequest;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -38,17 +41,17 @@ public class AircraftDao {
 
     private final String tableName;
     private final DynamoDbClient dynamoDb;
-    private final PriorityAircraftsDao priorityAircraftsDao;
 
-    public AircraftDao(final DynamoDbClient dynamoDb, final String tableName,
-                       final PriorityAircraftsDao priorityAircraftsDao) {
+    private Log logger = LogFactory.getLog(AircraftDao.class);
+
+    public AircraftDao(final DynamoDbClient dynamoDb, final String tableName) {
         this.dynamoDb = dynamoDb;
         this.tableName = tableName;
-        this.priorityAircraftsDao = priorityAircraftsDao;
     }
 
     /**
      * Returns an aircraft or throws if the aircraft does not exist.
+     *
      * @param aircraftId id of aircraft to get
      * @return the aircraft if it exists
      * @throws AircraftDoesNotExistException if the aircraft does not exist
@@ -66,6 +69,7 @@ public class AircraftDao {
                     .orElseThrow(() -> new AircraftDoesNotExistException("Aircraft "
                             + aircraftId + " does not exist"));
         } catch (ResourceNotFoundException e) {
+            logger.error("Aircraft table " + tableName + " does not exist", e);
             throw new TableDoesNotExistException("Aircraft table " + tableName + " does not exist");
         }
     }
@@ -78,9 +82,21 @@ public class AircraftDao {
 
         try {
             builder.aircraftId(item.get(AIRCRAFT_ID).s());
+            builder.priorityId(item.get("priorityId").s());
+            builder.airportCode(item.get("airportCode").s());
+            builder.arrivalTime(item.get("arrivalTime").s());
+            Optional.ofNullable(item.get("departureTime")).map(AttributeValue::s)
+                    .ifPresent(builder::departureTime);
+
+            Optional.ofNullable(item.get("aircraftSpecialFlag"))
+                    .map(AttributeValue::s)
+                    .ifPresent(flag -> builder.aircraftSpecialFlag(AircraftSpecialFlag.valueOf(flag)));
+            builder.aircraftType(AircraftType.valueOf(item.get("aircraftType").s()));
+            builder.aircraftSize(AircraftSize.valueOf(item.get("aircraftSize").s()));
         } catch (NullPointerException e) {
+            logger.error("Item did not have an aircraftId attribute or it was not a String", e);
             throw new IllegalStateException(
-                    "item did not have an aircraftId attribute or it was not a String");
+                    "Item did not have an aircraftId attribute or it was not a String");
         }
         return builder.build();
     }
@@ -95,7 +111,7 @@ public class AircraftDao {
     private String calculatePriority(
             final String airportCode,
             final AircraftType type, final AircraftSize size,
-                                  final Optional<AircraftSpecialFlag> specialFlags) {
+            final Optional<AircraftSpecialFlag> specialFlags) {
         int priority = type.getValue() + size.getValue();
         if (specialFlags.isPresent()) priority += specialFlags.get().getValue();
         return String.join("-", airportCode, String.valueOf(priority));
@@ -106,15 +122,15 @@ public class AircraftDao {
 
         final String airportCode = aircraftRequest.getAirportCode().toUpperCase(Locale.ENGLISH);
         result.put("airportCode", AttributeValue.builder()
-                    .s(airportCode)
-                    .build());
+                .s(airportCode)
+                .build());
         result.put(AIRCRAFT_ID, AttributeValue.builder()
                 .s(UUID.randomUUID().toString())
                 .build());
         result.put("priorityId", AttributeValue.builder()
-                    .s(calculatePriority(airportCode, aircraftRequest.getAircraftType(), aircraftRequest.getAircraftSize(),
-                            Optional.ofNullable(aircraftRequest.getAircraftSpecialFlag())))
-                    .build());
+                .s(calculatePriority(airportCode, aircraftRequest.getAircraftType(), aircraftRequest.getAircraftSize(),
+                        Optional.ofNullable(aircraftRequest.getAircraftSpecialFlag())))
+                .build());
         result.put("arrivalTime", AttributeValue.builder()
                 .s(getCurrentMomentAsString())
                 .build());
@@ -134,6 +150,7 @@ public class AircraftDao {
 
     /**
      * Creates an Aircraft.
+     *
      * @param createAircraftRequest details of Aircraft to create
      * @return created Aircraft
      */
@@ -149,7 +166,7 @@ public class AircraftDao {
         }
 
         if (createAircraftRequest.getAircraftSize() == null) {
-            throw  new IllegalArgumentException(AIRCRAFT_SIZE_WAS_NULL);
+            throw new IllegalArgumentException(AIRCRAFT_SIZE_WAS_NULL);
         }
 
         int tries = 0;
@@ -162,20 +179,6 @@ public class AircraftDao {
                         .conditionExpression("attribute_not_exists(" + AIRCRAFT_ID + ")")
                         .build());
 
-                // Below section will be removed pretty soon and will be implemented as db streams and make it transcational
-                // Failure in the below operations should trigger alarms.
-
-                priorityAircraftsDao.createAircraftPriority(CreateAircraftPriorityRequest.builder()
-                        .aircraftId(item.get(AIRCRAFT_ID).s())
-                        .priorityId(item.get("priorityId").s())
-                        .arrivalTime(item.get("arrivalTime").s())
-                        .build()
-                );
-                priorityAircraftsDao.updateAirportPriorityQueue(UpdateAirportPriorityQueueRequest.builder()
-                        .priorityId(item.get("priorityId").s())
-                        .airportCode(item.get("airportCode").s())
-                        .date(item.get("arrivalTime").s())
-                        .build());
                 return Aircraft.builder()
                         .aircraftId(item.get(AIRCRAFT_ID).s())
                         .aircraftSize(AircraftSize.valueOf(item.get("aircraftSize").s()))
@@ -193,5 +196,29 @@ public class AircraftDao {
         }
         throw new CouldNotCreateAircraftException(
                 "Unable to generate aircraft after 2 tries");
+    }
+
+    public Aircraft deleteAircraft(String aircraftId) {
+        final HashMap<String, AttributeValue> keyEntry = new HashMap<>();
+        keyEntry.put(AIRCRAFT_ID, AttributeValue.builder()
+                .s(aircraftId)
+                .build());
+        final HashMap<String, AttributeValueUpdate> updateEntry = new HashMap<>();
+        updateEntry.put("priorityId",
+                AttributeValueUpdate.builder()
+                        .action(AttributeAction.PUT)
+                        .value(AttributeValue.builder().s("0").build())
+                        .build());
+        try {
+            return convert(dynamoDb.updateItem(UpdateItemRequest.builder()
+                    .tableName(tableName)
+                    .key(keyEntry)
+                    .returnValues(ReturnValue.ALL_OLD)
+                    .attributeUpdates(updateEntry)
+                    .build()).attributes());
+        }catch (Exception e) {
+            logger.error("Failed to deleteAircraft", e);
+        }
+        return null;
     }
 }

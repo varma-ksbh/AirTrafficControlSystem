@@ -1,6 +1,5 @@
 package com.varma.airtraffic.control.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.varma.airtraffic.control.dao.PriorityAircraftsDao;
 import dagger.Module;
 import dagger.Provides;

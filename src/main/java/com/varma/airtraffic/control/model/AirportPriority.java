@@ -1,4 +1,4 @@
-package com.varma.airtraffic.control.model.request;
+package com.varma.airtraffic.control.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UpdateAirportPriorityQueueRequest {
+public class AirportPriority {
     private String airportCode;
     private String priorityId;
     private String date;

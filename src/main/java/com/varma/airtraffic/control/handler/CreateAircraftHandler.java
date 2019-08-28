@@ -8,9 +8,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.varma.airtraffic.control.config.AirTrafficControlComponent;
 import com.varma.airtraffic.control.config.DaggerAirTrafficControlComponent;
 import com.varma.airtraffic.control.dao.AircraftDao;
+import com.varma.airtraffic.control.dao.PriorityAircraftsDao;
 import com.varma.airtraffic.control.exception.CouldNotCreateAircraftException;
 import com.varma.airtraffic.control.model.Aircraft;
+import com.varma.airtraffic.control.model.request.CreateAircraftPriorityRequest;
 import com.varma.airtraffic.control.model.request.CreateAircraftRequest;
+import com.varma.airtraffic.control.model.request.UpdateAirportPriorityRequest;
 import com.varma.airtraffic.control.model.response.ErrorMessage;
 import com.varma.airtraffic.control.model.response.GatewayResponse;
 
@@ -34,6 +37,9 @@ public class CreateAircraftHandler implements AircraftRequestStreamHandler {
     ObjectMapper objectMapper;
     @Inject
     AircraftDao acDao;
+    @Inject
+    PriorityAircraftsDao priorityAcDao;
+
     private final AirTrafficControlComponent acComponent;
 
     public CreateAircraftHandler() {
@@ -112,6 +118,16 @@ public class CreateAircraftHandler implements AircraftRequestStreamHandler {
         }
         try {
             final Aircraft ac = acDao.createAircraft(request);
+            // Below should be implemented as stream with dead letter queues and should be alarmed for failures
+            priorityAcDao.createAircraftPriority(CreateAircraftPriorityRequest.builder()
+                    .aircraftId(ac.getAircraftId())
+                    .priorityId(ac.getPriorityId())
+                    .arrivalTime(ac.getArrivalTime())
+                    .build());
+            priorityAcDao.updateAirportPriorityQueue(UpdateAirportPriorityRequest.builder()
+                    .priorityId(ac.getPriorityId())
+                    .airportCode(ac.getAirportCode())
+                    .date(ac.getArrivalTime()).build());
             objectMapper.writeValue(output,
                     new GatewayResponse<>(objectMapper.writeValueAsString(ac),
                             APPLICATION_JSON, SC_CREATED));

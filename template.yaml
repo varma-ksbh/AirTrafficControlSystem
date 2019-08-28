@@ -6,7 +6,9 @@ Description: >
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
     Function:
-        Timeout: 20
+        Timeout: 120
+        MemorySize: 1024
+        Runtime: java8
 
 Resources:
   AircraftTable:
@@ -54,8 +56,6 @@ Resources:
       CodeUri: target/varma-airtraffic-control-1.0.0.jar
       Handler: com.varma.airtraffic.control.handler.GetAircraftHandler::handleRequest
       Policies: AmazonDynamoDBFullAccess
-      Runtime: java8
-      MemorySize: 1024
       Timeout: 120
       Environment:
         Variables:
@@ -74,8 +74,6 @@ Resources:
       Handler: com.varma.airtraffic.control.handler.CreateAircraftHandler::handleRequest
       Runtime: java8
       Policies: AmazonDynamoDBFullAccess
-      MemorySize: 1024
-      Timeout: 120
       Environment:
         Variables:
           AIRCRAFT_TABLE_NAME: !Ref AircraftTable
@@ -86,6 +84,23 @@ Resources:
           Properties:
             Path: /aircrafts
             Method: post
+  DequeueAircraftFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: target/varma-airtraffic-control-1.0.0.jar
+      Handler: com.varma.airtraffic.control.handler.DequeueAircraftHandler::handleRequest
+      Runtime: java8
+      Policies: AmazonDynamoDBFullAccess
+      Environment:
+        Variables:
+          AIRCRAFT_TABLE_NAME: !Ref AircraftTable
+          PRIORITY_AIRCRAFT_TABLE_NAME: !Ref PriorityAircraftsTable
+      Events:
+        DequeueAircraft:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /airports/{airportCode}/dequeueAircraft
+            Method: delete
 
 Outputs:
     GetAircraftFunction:
@@ -95,4 +110,8 @@ Outputs:
     CreateAircraftFunction:
       Description: "CreateAircraft Lambda Function ARN"
       Value: !GetAtt CreateAircraftFunction.Arn
+
+    DequeueAircraftFunction:
+      Description: "CreateAircraft Lambda Function ARN"
+      Value: !GetAtt DequeueAircraftFunction.Arn
 

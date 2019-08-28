@@ -23,10 +23,12 @@ public interface AircraftRequestStreamHandler extends RequestStreamHandler {
             = new ErrorMessage("Request was null", SC_BAD_REQUEST);
     ErrorMessage AIRCRAFT_ID_WAS_NOT_SET
             = new ErrorMessage("Aircraft with given aircraftId is NOT_FOUND", SC_NOT_FOUND);
+    ErrorMessage AIRPORT_CODE_WAS_NOT_SET
+            = new ErrorMessage("Airport with given code is NOT_FOUND", SC_NOT_FOUND);
 
     /**
      * This method writes a body has invalid JSON response.
-     * @param objectMapper the mappeter to use for converting the error response to JSON.
+     * @param objectMapper the mapper to use for converting the error response to JSON.
      * @param output the output stream to write with the mapper.
      * @param details a detailed message describing why the JSON was invalid.
      * @throws IOException if there was an issue converting the ErrorMessage object to JSON.
