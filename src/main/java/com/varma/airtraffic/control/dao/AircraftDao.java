@@ -8,7 +8,9 @@ import com.varma.airtraffic.control.model.Aircraft;
 import com.varma.airtraffic.control.model.AircraftSize;
 import com.varma.airtraffic.control.model.AircraftSpecialFlag;
 import com.varma.airtraffic.control.model.AircraftType;
+import com.varma.airtraffic.control.model.request.CreateAircraftPriorityRequest;
 import com.varma.airtraffic.control.model.request.CreateAircraftRequest;
+import com.varma.airtraffic.control.model.request.UpdateAirportPriorityQueueRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
@@ -36,15 +38,13 @@ public class AircraftDao {
 
     private final String tableName;
     private final DynamoDbClient dynamoDb;
-//    private final int pageSize;
-//    private final ObjectMapper mapper;
+    private final PriorityAircraftsDao priorityAircraftsDao;
 
     public AircraftDao(final DynamoDbClient dynamoDb, final String tableName,
-                       final int pageSize, final ObjectMapper mapper) {
+                       final PriorityAircraftsDao priorityAircraftsDao) {
         this.dynamoDb = dynamoDb;
         this.tableName = tableName;
-//        this.pageSize = pageSize; // will be used in later code
-//        this.mapper = mapper;
+        this.priorityAircraftsDao = priorityAircraftsDao;
     }
 
     /**
@@ -160,6 +160,21 @@ public class AircraftDao {
                         .tableName(tableName)
                         .item(item)
                         .conditionExpression("attribute_not_exists(" + AIRCRAFT_ID + ")")
+                        .build());
+
+                // Below section will be removed pretty soon and will be implemented as db streams and make it transcational
+                // Failure in the below operations should trigger alarms.
+
+                priorityAircraftsDao.createAircraftPriority(CreateAircraftPriorityRequest.builder()
+                        .aircraftId(item.get(AIRCRAFT_ID).s())
+                        .priorityId(item.get("priorityId").s())
+                        .arrivalTime(item.get("arrivalTime").s())
+                        .build()
+                );
+                priorityAircraftsDao.updateAirportPriorityQueue(UpdateAirportPriorityQueueRequest.builder()
+                        .priorityId(item.get("priorityId").s())
+                        .airportCode(item.get("airportCode").s())
+                        .date(item.get("arrivalTime").s())
                         .build());
                 return Aircraft.builder()
                         .aircraftId(item.get(AIRCRAFT_ID).s())

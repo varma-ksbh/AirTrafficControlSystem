@@ -27,7 +27,7 @@ public class DynamoModule {
     @Named("priorityAircraftTableName")
     String priorityAircraftTableName() {
         return Optional.ofNullable(System.getenv("PRIORITY_AIRCRAFT_TABLE_NAME"))
-                .orElse("priority_aircraft_table");
+                .orElse("PriorityAircraftsTable");
     }
 
     @Singleton

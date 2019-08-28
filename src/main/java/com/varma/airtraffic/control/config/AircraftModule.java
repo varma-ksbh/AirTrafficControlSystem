@@ -1,7 +1,7 @@
 package com.varma.airtraffic.control.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.varma.airtraffic.control.dao.AircraftDao;
+import com.varma.airtraffic.control.dao.PriorityAircraftsDao;
 import dagger.Module;
 import dagger.Provides;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -13,8 +13,7 @@ import javax.inject.Singleton;
 public class AircraftModule {
     @Singleton
     @Provides
-    public AircraftDao airCraftDao(DynamoDbClient dynamoDb, @Named("aircraftTableName") String tableName,
-                                   ObjectMapper mapper) {
-        return new AircraftDao(dynamoDb, tableName,10, mapper);
+    public AircraftDao airCraftDao(DynamoDbClient dynamoDb, @Named("aircraftTableName") String tableName, PriorityAircraftsDao priorityAircraftsDao) {
+        return new AircraftDao(dynamoDb, tableName,priorityAircraftsDao);
     }
 }
