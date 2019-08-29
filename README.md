@@ -116,7 +116,7 @@ RangeKey: priorityId
 {
   "hashKey": "IAD",
   "rangeKey": "IAD-7030",
-  "date": "2019-08-29T02:10Z",,
+  "date": "2019-08-29T02:10Z"
 }
 ```
 
