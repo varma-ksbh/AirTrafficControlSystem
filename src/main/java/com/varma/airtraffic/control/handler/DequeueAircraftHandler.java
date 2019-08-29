@@ -9,6 +9,9 @@ import com.varma.airtraffic.control.config.DaggerAirTrafficControlComponent;
 import com.varma.airtraffic.control.dao.AircraftDao;
 import com.varma.airtraffic.control.dao.PriorityAircraftsDao;
 import com.varma.airtraffic.control.exception.AircraftDoesNotExistException;
+import com.varma.airtraffic.control.exception.AirportWithEmptyAircraftsException;
+import com.varma.airtraffic.control.exception.UnableToDeleteException;
+import com.varma.airtraffic.control.exception.UnableToUpdateException;
 import com.varma.airtraffic.control.model.Aircraft;
 import com.varma.airtraffic.control.model.AircraftPriority;
 import com.varma.airtraffic.control.model.AirportPriority;
@@ -33,6 +36,7 @@ public class DequeueAircraftHandler implements AircraftRequestStreamHandler {
 
     private final AirTrafficControlComponent atcComponent;
     private final Log logger = LogFactory.getLog(DequeueAircraftHandler.class);
+
     public DequeueAircraftHandler() {
         atcComponent = DaggerAirTrafficControlComponent.builder().build();
         atcComponent.inject(this);
@@ -64,6 +68,7 @@ public class DequeueAircraftHandler implements AircraftRequestStreamHandler {
                             APPLICATION_JSON, SC_BAD_REQUEST));
             return;
         }
+        String errorMessage = null;
         try {
             final AirportPriority apEntry = priorityAircraftsDao.getHighestPriorityIdForAirport(airportCode);
             logger.debug("Airport" + airportCode + "has the highest priority" + apEntry.getPriorityId());
@@ -82,11 +87,18 @@ public class DequeueAircraftHandler implements AircraftRequestStreamHandler {
                             objectMapper.writeValueAsString(aircraft),
                             APPLICATION_JSON, SC_OK));
         } catch (AircraftDoesNotExistException e) {
-            objectMapper.writeValue(output,
-                    new GatewayResponse<>(
-                            objectMapper.writeValueAsString(
-                                    new ErrorMessage(e.getMessage(), SC_NOT_FOUND)),
-                            APPLICATION_JSON, SC_NOT_FOUND));
+            errorMessage = e.getMessage();
+        } catch (AirportWithEmptyAircraftsException e) {
+            errorMessage = e.getMessage();
+        } catch (UnableToDeleteException e) {
+            errorMessage = e.getMessage();
+        } catch (UnableToUpdateException e) {
+            errorMessage = e.getMessage();
         }
+        objectMapper.writeValue(output,
+                new GatewayResponse<>(
+                        objectMapper.writeValueAsString(
+                                new ErrorMessage(errorMessage, SC_NOT_FOUND)),
+                        APPLICATION_JSON, SC_NOT_FOUND));
     }
 }

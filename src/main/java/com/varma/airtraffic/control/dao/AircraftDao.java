@@ -3,6 +3,8 @@ package com.varma.airtraffic.control.dao;
 import com.varma.airtraffic.control.exception.AircraftDoesNotExistException;
 import com.varma.airtraffic.control.exception.CouldNotCreateAircraftException;
 import com.varma.airtraffic.control.exception.TableDoesNotExistException;
+import com.varma.airtraffic.control.exception.UnableToDeleteException;
+import com.varma.airtraffic.control.exception.UnableToUpdateException;
 import com.varma.airtraffic.control.model.Aircraft;
 import com.varma.airtraffic.control.model.AircraftSize;
 import com.varma.airtraffic.control.model.AircraftSpecialFlag;
@@ -218,7 +220,7 @@ public class AircraftDao {
                     .build()).attributes());
         }catch (Exception e) {
             logger.error("Failed to deleteAircraft", e);
+            throw new UnableToUpdateException("Failed to update Aircraft:" + aircraftId);
         }
-        return null;
     }
 }

@@ -2,6 +2,7 @@ package com.varma.airtraffic.control.dao;
 
 import com.varma.airtraffic.control.exception.AirportWithEmptyAircraftsException;
 import com.varma.airtraffic.control.exception.TableDoesNotExistException;
+import com.varma.airtraffic.control.exception.UnableToDeleteException;
 import com.varma.airtraffic.control.model.AirportPriority;
 import com.varma.airtraffic.control.model.AircraftPriority;
 import com.varma.airtraffic.control.model.request.CreateAircraftPriorityRequest;
@@ -138,8 +139,9 @@ public class PriorityAircraftsDao {
         } catch (Exception e) {
             logger.error("Failed to delete PriorityAircraft with PriorityId(hashKey): "
                     + ", aircraftId(rangeKey): " + request.getPriorityId() + request.getAircraftId(), e);
+            throw new UnableToDeleteException("Failed to delete Aircraft: + " + request.getAircraftId()
+                    + " with priority" + request.getPriorityId());
         }
-        return null;
     }
 
     public AirportPriority deleteAirportPriorityEntry(final AirportPriority request) {
@@ -160,8 +162,9 @@ public class PriorityAircraftsDao {
         } catch (Exception e) {
             logger.error("Failed to delete AirportPriority with AirportCode(hashKey):"
                     + request.getAirportCode() +  " , priorityId(rangeKey):" + request.getPriorityId(), e);
+            throw new UnableToDeleteException("Failed to delete AiportPriorityEntry: + " + request.getAirportCode()
+                    + " with priority" + request.getPriorityId());
         }
-        return null;
     }
 
     public Map<String, AttributeValue> queryForHighestPriorityForAirport(String airportCode) {
