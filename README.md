@@ -49,20 +49,20 @@ Add up all the priorities and the aircraft with the highest priority wins!
 NOTE: The current priorities have a digit left between them for future priorities
 ```
 #### API Design
-1. POST /airports/{airportCode}/reset <!-- Reset all the aircrafts in the given airport -->
+1. POST /airports/{airportCode}/reset <!-- Reset/Reboot all the aircrafts in the given airport -->
 
 2. POST /aircrafts <!-- Enter a new aircraft into the system -->
 
 3. GET /aircrafts/{aircraftId} <!-- Fetch aircraft with a given Id -->
 
-4. PUT /aircrafts/{aircraftId} <!-- Update the aircraft.usually to change the emergency -->
+4. PUT /aircrafts/{aircraftId} <!-- Update the aircraft. Usually to change the emergency -->
 
-5. GET /aircrafts?aircraftSpecialFlag=EMERGENCY&airportCode=IAD <!-- List all emergency flights of an airport -->
+5. GET /aircrafts?airportCode=IAD&aircraftType=CARGO <!-- List all emergency flights of an airport -->
 
-6. PUT /airports/{airportCode}/clearForTakeOff <!-- Clears an AirCraft for takeoff -->
+6. DELETE /airports/{airportCode}/dequeueAircraft <!-- Clears an AirCraft for takeoff -->
 
 #### Dynamo Design
-#####Table 1:
+##### Table 1:
 Aircraft Table
 Partition Key: aircraftId
 
@@ -84,19 +84,21 @@ Note: As we build up the queries, we can add/modify the GSI
 ```
 Expected queries:
 1. Fetch Aircraft with id
-2. Fetch all aircrafts under airportCode IAD
+2. Fetch all Aircraft under airportCode IAD
  
-#####Table 2:
+##### Table 2:
 PriorityAircrafts Table
-Partition Key: priorityId
+HashKey: priorityId
+RangeKey: aircraftId
 
 PriorityId-ArrivalTimeIndex LSI Table
-SecondaryIndex: Date
+HashKey: priorityId
+RangeKey: Date
 ```json
 {
-  "priorityId": "IAD-503070",
-  "arrivalTime": "2019-08-27T05:00Z",
-  "aircraftId": "9ea1bc6b-9bc0-41df-b38f-4576e0711461"
+  "date": "2019-08-29T02:10Z",
+  "hashKey": "IAD-7030",
+  "rangeKey": "54266ca2-2515-426a-bc44-b3ce8ee04aa9"
 }
 ```
 
@@ -106,6 +108,18 @@ Expected queries:
 1. Fetch all aircrafts with priority IAD-503070 and filter by ascending arrival time
 
 Note: We can maintain a cache that saves the active priorityIds of an airport which will improve the efficiency of the system
+But for now, Using the `PriorityAircrafts Table` to store all priorityIds of a given airport
+i.e
+HashKey: airportCode
+RangeKey: priorityId
+```json
+{
+  "hashKey": "IAD",
+  "rangeKey": "IAD-7030",
+  "date": "2019-08-29T02:10Z",,
+}
+```
+
 
 ## Requirements
 
