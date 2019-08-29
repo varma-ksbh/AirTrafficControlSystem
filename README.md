@@ -177,3 +177,11 @@ following command:
 ```bash
 mvn test
 ```
+
+## To-do / Improvements
+
+1. Make the [following operations](https://github.com/varma-ksbh/AirTrafficControlSystem/blob/master/src/main/java/com/varma/airtraffic/control/handler/DequeueAircraftHandler.java#L73-L82) transcational
+
+2. [AirportPriority model](https://github.com/varma-ksbh/AirTrafficControlSystem/blob/master/src/main/java/com/varma/airtraffic/control/model/AirportPriority.java) has a constant number of records and should be moved to redis or similar in-memory solutions for greater performance
+
+3. Start implementing the web interface for the application. This will put us more in the customer shoes and help us in designing better API's. 
