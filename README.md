@@ -190,26 +190,30 @@ mvn test
 
 
 ## Few Choices & Decisions
-Few choices and Decisions
 
 1. Submit an in-memory solution within a day or two and give a detailed explanation of how it can be extended.
 
-Decision: An in-memory solution of using heaps is not directly transferable to persistent datastore, which means this is throw away work. Hence, discarded this choice
+   An in-memory solution of using heaps is not directly transferable to persistent datastore, which means this is throw away work. Hence, discarded this choice
 
 2. Which datastore?
-Decision: Looked for a managed service that can scale horizontally and was biased for DynamoDB as I have worked with it. With dynamo supporting transactions, I backed my decision.
+
+   Looked for a managed service that can scale horizontally and was biased for DynamoDB as I have worked with it. With dynamo supporting transactions, I backed my decision.
 
 3. How can you run real-time fast lookup against DynamoDB?
-Decision: I have decided not to use Global secondary Indexes altogether for critical application functionality (Flight enqueue & dequeue) to avoid eventual consistency. 
+
+   I have decided not to use Global secondary Indexes altogether for critical application functionality (Flight enqueue & dequeue) to avoid eventual consistency. 
 A smart application decision of having the priority as single attribute allowed me to create an index on it, allowing me to do fast lookups. Read the readme.md for more info
 
 4. DynamoDB streams vs DynamoDB Transcations
-Decision: Go with DynamoDB transcations as streams in worst case have a high latency or eventual consistency
+
+   Go with DynamoDB transcations as streams in worst case have a high latency or eventual consistency
 
 5. How to expand to future/unknown queries
-Decision: All queries such as list/etc that are not part of critical application function should be implemented on GSI tables to avoid consuming read/write units of the critical operations.
 
-I.e say List all emergency aircrafts should be served from a GSI table. We might show a stale record because of eventual consistency, but the overall application functionality will never be hampered. I assumed that its okay for the list call to be eventually consistent.
+   All queries such as list/etc that are not part of critical application function should be implemented on GSI tables to avoid consuming read/write units of the critical operations.
+ 
+   i.e say List all emergency aircrafts should be served from a GSI table. We might show a stale record because of eventual consistency, but the overall application functionality will never be hampered. I assumed that its okay for the list call to be eventually consistent.
 
 7. Operational metrics and alarms
-Decision: We can use DLQ to store all failed transcations and alarma on that, and other resource consumption can be alarmed using cloudwatch. Say dynamo read/write consumed units, api faults and errors etc.
+
+   We can use DLQ to store all failed transcations and alarma on that, and other resource consumption can be alarmed using cloudwatch. Say dynamo read/write consumed units, api faults and errors etc.
